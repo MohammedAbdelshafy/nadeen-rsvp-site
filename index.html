@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nadeen's Bridal Shower RSVP</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Alex+Brush&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-decor top-left"></div>
+    <div class="background-decor top-right"></div>
+    <div class="background-decor bottom-left"></div>
+    <div class="background-decor bottom-right"></div>
+
+    <div class="container">
+        <header class="header">
+            <div class="ribbon-top">
+                <svg width="60" height="20" viewBox="0 0 100 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Placeholder ribbon SVG -->
+                    <path d="M10,15 Q50,0 90,15 Q50,30 10,15 Z" fill="#e9a3b2"/>
+                    <circle cx="50" cy="15" r="5" fill="#fdf4f6"/>
+                </svg>
+            </div>
+            
+            <p class="subtitle">A LITTLE SOIREE</p>
+            <p class="subtitle-hearts">♥ FOR THE ♥</p>
+            
+            <h1 class="bride-title">Bride-to-Be</h1>
+            <h2 class="name-main">Nadeen</h2>
+            <h3 class="name-sub">omar abdelshafy</h3>
+            
+            <p class="subtitle mt-3">BEFORE SHE STARTS</p>
+            <p class="subtitle-hearts">♥ THIS NEW CHAPTER OF HER LIFE ♥</p>
+        </header>
+
+        <div class="event-details">
+            <div class="detail-item">
+                <div class="icon-circle">📅</div>
+                <p>SEPT 5TH</p>
+            </div>
+            <div class="detail-divider"></div>
+            <div class="detail-item">
+                <div class="icon-circle">⏰</div>
+                <p>7 PM</p>
+            </div>
+            <div class="detail-divider"></div>
+            <div class="detail-item">
+                <div class="icon-circle">🏠</div>
+                <p>AT SQEEL<br>FAMILY HOUSE</p>
+            </div>
+        </div>
+
+        <div class="couple-image-container">
+            <!-- Will use the generated image -->
+            <img src="assets/couple_illustration_1787396283309.jpg" alt="Nadeen & Omar" class="couple-img">
+        </div>
+
+        <div class="scroll-down">
+            <div class="ribbon-mid">I'll be there! ♥</div>
+            <p>RSVP BELOW ↓</p>
+        </div>
+
+        <div class="rsvp-card">
+            <h2 class="rsvp-title">RSVP ♥</h2>
+            <p class="rsvp-subtitle">♥ KINDLY RSVP BY AUGUST 28TH ♥</p>
+            
+            <form id="rsvp-form">
+                <div class="input-group">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="fullName" placeholder="Your Full Name" required>
+                </div>
+                
+                <div class="input-group">
+                    <span class="input-icon">💬</span>
+                    <input type="tel" id="whatsapp" placeholder="WhatsApp Number" required>
+                </div>
+                
+                <div class="form-section">
+                    <label>Will you be attending?</label>
+                    <div class="radio-group">
+                        <label class="radio-btn active">
+                            <input type="radio" name="attending" value="yes" checked>
+                            ♥ Yes, I'll be there!
+                        </label>
+                        <label class="radio-btn">
+                            <input type="radio" name="attending" value="no">
+                            Sorry, can't make it
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label>Please choose your plate:</label>
+                    <div class="radio-group">
+                        <label class="radio-btn plate-btn">
+                            <input type="radio" name="plate" value="beef" checked>
+                            🍔 Beef
+                        </label>
+                        <label class="radio-btn plate-btn">
+                            <input type="radio" name="plate" value="chicken">
+                            🍗 Chicken
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label>Any dietary restrictions?</label>
+                    <div class="input-group">
+                        <span class="input-icon">🍽️</span>
+                        <input type="text" id="dietary" placeholder="Let us know (optional)">
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label>Anything you'd like to tell the bride-to-be?</label>
+                    <div class="input-group">
+                        <span class="input-icon">♡</span>
+                        <input type="text" id="message" placeholder="Your message...">
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn">🎀 SEND MY RSVP ♥</button>
+            </form>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-icons">
+                <div class="footer-item">🎀<br><span>AMAZING<br>LOVED ONES</span></div>
+                <div class="footer-item">🏠<br><span>HAPPY<br>FAMILY VIBES</span></div>
+                <div class="footer-item">🌙<br><span></span></div>
+            </div>
+            <p class="footer-text">♥ LET'S MAKE IT A NIGHT TO REMEMBER ♥</p>
+        </footer>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Thank You!</h2>
+            <p>Your RSVP has been received.</p>
+            <button id="close-modal" class="submit-btn">Close</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
