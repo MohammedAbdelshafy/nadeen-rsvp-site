@@ -1,0 +1,12 @@
+{
+  "name": "nadeen-rsvp-site",
+  "version": "1.0.0",
+  "description": "Nadeen & Omar Soiree RSVP Site and API",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1"
+  }
+}
