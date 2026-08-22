@@ -51,7 +51,8 @@ async function notifyTelegram(rsvp) {
     `🍽️ *Meal Choice:* ${mealText}\n` +
     `🥗 *Dietary:* ${dietaryText}\n` +
     `💬 *Message:* ${messageText}\n` +
-    `⏰ *Time:* ${new Date().toLocaleString()}`;
+    `⏰ *Time:* ${new Date().toLocaleString()}\n\n` +
+    `🔗 *Guest Link:* [nadeen-rsvp-site.vercel.app](https://nadeen-rsvp-site.vercel.app/)`;
 
   try {
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
