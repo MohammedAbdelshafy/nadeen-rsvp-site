@@ -49,68 +49,90 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        if (formError) {
-            formError.style.display = 'none';
-            formError.textContent = '';
-        }
-
-        const fullName = document.getElementById('fullName').value.trim();
-        const whatsapp = document.getElementById('whatsapp').value.trim();
-        const attendingInput = document.querySelector('input[name="attending"]:checked');
-        const attending = attendingInput ? attendingInput.value : 'yes';
-        const plateInput = document.querySelector('input[name="plate"]:checked');
-        const plate = plateInput ? plateInput.value : 'beef';
-        const dietary = document.getElementById('dietary').value.trim();
-        const message = document.getElementById('message').value.trim();
-
-        // Validation
-        if (!fullName || fullName.length < 2) {
-            showError('Please enter your full name.');
-            return;
-        }
-
-        if (!whatsapp || whatsapp.length < 8) {
-            showError('Please enter a valid WhatsApp or mobile number.');
-            return;
-        }
-
-        const payload = {
-            fullName,
-            whatsapp,
-            attending,
-            plate: attending === 'yes' ? plate : null,
-            dietary,
-            message
-        };
-
-        // Loading state
-        const originalBtnText = submitBtn.textContent;
-        submitBtn.disabled = true;
-        submitBtn.textContent = '⏳ Recording your RSVP...';
-
         try {
-            const res = await fetch(getApiUrl('/api/submit'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+            if (formError) {
+                formError.style.display = 'none';
+                formError.textContent = '';
+            }
 
-            const result = await res.json();
+            const fullNameEl = document.getElementById('fullName');
+            const whatsappEl = document.getElementById('whatsapp');
+            const dietaryEl = document.getElementById('dietary');
+            const messageEl = document.getElementById('message');
 
-            if (!res.ok) {
+            const fullName = fullNameEl ? fullNameEl.value.trim() : '';
+            const whatsapp = whatsappEl ? whatsappEl.value.trim() : '';
+            const attendingInput = document.querySelector('input[name="attending"]:checked');
+            const attending = attendingInput ? attendingInput.value : 'yes';
+            const plateInput = document.querySelector('input[name="plate"]:checked');
+            const plate = plateInput ? plateInput.value : 'beef';
+            const dietary = dietaryEl ? dietaryEl.value.trim() : '';
+            const message = messageEl ? messageEl.value.trim() : '';
+
+            // Validation
+            if (!fullName || fullName.length < 2) {
+                showError('Please enter your full name.');
+                return;
+            }
+
+            if (!whatsapp || whatsapp.length < 8) {
+                showError('Please enter a valid WhatsApp or mobile number.');
+                return;
+            }
+
+            const payload = {
+                fullName,
+                whatsapp,
+                attending,
+                plate: attending === 'yes' ? plate : null,
+                dietary,
+                message
+            };
+
+            // Loading state
+            const originalBtnText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Recording your RSVP...';
+
+            let res;
+            try {
+                res = await fetch(getApiUrl('/api/submit'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+            } catch (networkErr) {
+                throw new Error('Network error. Please check your internet connection and try again.');
+            }
+
+            let result = {};
+            try {
+                result = await res.json();
+            } catch (jsonErr) {
+                if (!res.ok) {
+                    throw new Error('Server error occurred. Please try again later.');
+                }
+            }
+
+            if (!res?.ok) {
                 throw new Error(result.error || 'Failed to submit RSVP. Please try again.');
             }
 
             // Success modal
-            modal.classList.remove('hidden');
+            if (modal) modal.classList.remove('hidden');
         } catch (err) {
             console.error('RSVP submission error:', err);
-            showError(err.message || 'Network error occurred. Please try again.');
+            showError(err.message || 'An unexpected error occurred. Please try again.');
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalBtnText;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                // Only reset text if we changed it to the loading state
+                if (submitBtn.textContent === '⏳ Recording your RSVP...') {
+                    submitBtn.textContent = '🎀 SEND MY RSVP ♥';
+                }
+            }
         }
     });
 
