@@ -168,8 +168,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Database error: ' + error.message });
     }
 
-    // Trigger optional Telegram notification in background (non-blocking)
-    notifyTelegram(payload).catch(console.error);
+    // Await Telegram notification so serverless function doesn't terminate before it finishes
+    await notifyTelegram(payload);
 
     return res.status(200).json({
       success: true,
