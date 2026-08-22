@@ -11,11 +11,26 @@ function setCorsHeaders(res) {
   );
 }
 
-// Clean and normalize phone numbers
-function normalizePhone(raw) {
-  if (!raw) return '';
-  const digits = raw.replace(/[^\d+]/g, '').trim();
-  return digits;
+// Clean and normalize phone numbers (digits and leading + only)
+export function normalizePhone(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  let cleaned = raw.trim();
+  const hasLeadingPlus = cleaned.startsWith('+');
+  const digitsOnly = cleaned.replace(/\D/g, '');
+  if (!digitsOnly) return '';
+  return hasLeadingPlus ? `+${digitsOnly}` : digitsOnly;
+}
+
+// Sanitize text strings to remove potential HTML tags, scripts, and control characters
+export function sanitizeString(val, maxLength = 255) {
+  if (val === null || val === undefined) return '';
+  if (typeof val !== 'string') return String(val).slice(0, maxLength);
+  return val
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .trim()
+    .slice(0, maxLength);
 }
 
 // Optional helper to notify Telegram on each submission
@@ -66,35 +81,73 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { fullName, name, whatsapp, phone, attending, plate, meal, dietary, message } = req.body || {};
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({ error: 'Malformed request: JSON body required.' });
+    }
 
-    const guestName = (name || fullName || '').trim();
-    const guestPhone = normalizePhone(phone || whatsapp);
-    const isAttending = attending === true || attending === 'yes' || attending === 'true';
-    const guestMeal = isAttending ? (meal || plate || 'beef').toLowerCase() : null;
-    const guestDietary = (dietary || '').trim();
-    const guestMessage = (message || '').trim();
+    const { fullName, name, whatsapp, phone, attending, plate, meal, dietary, message } = req.body;
 
+    // 1. Name Validation
+    const rawName = name !== undefined ? name : fullName;
+    const guestName = sanitizeString(rawName, 100);
     if (!guestName || guestName.length < 2) {
-      return res.status(400).json({ error: 'Please enter a valid full name.' });
+      return res.status(400).json({ error: 'Please enter a valid full name (2–100 characters).' });
     }
 
-    if (!guestPhone || guestPhone.length < 8) {
-      return res.status(400).json({ error: 'Please enter a valid WhatsApp or phone number.' });
+    // 2. Phone Validation & Normalization
+    const rawPhone = phone !== undefined ? phone : whatsapp;
+    const guestPhone = normalizePhone(rawPhone);
+    const digitsCount = guestPhone.replace(/\D/g, '').length;
+    if (!guestPhone || digitsCount < 8 || digitsCount > 20) {
+      return res.status(400).json({ error: 'Please enter a valid WhatsApp or phone number (8–20 digits).' });
     }
 
+    // 3. Attendance Validation
+    let isAttending = false;
+    if (typeof attending === 'boolean') {
+      isAttending = attending;
+    } else if (typeof attending === 'string') {
+      const lowerAttending = attending.toLowerCase().trim();
+      if (lowerAttending === 'yes' || lowerAttending === 'true' || lowerAttending === 'attending') {
+        isAttending = true;
+      } else if (lowerAttending === 'no' || lowerAttending === 'false' || lowerAttending === 'declined') {
+        isAttending = false;
+      } else {
+        return res.status(400).json({ error: 'Invalid attendance value. Please choose Yes or No.' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Please indicate whether you will be attending.' });
+    }
+
+    // 4. Meal Validation (Required if attending)
+    let guestMeal = null;
+    if (isAttending) {
+      const rawMeal = String(meal || plate || '').toLowerCase().trim();
+      if (!rawMeal) {
+        return res.status(400).json({ error: 'Please choose your plate (Beef or Chicken).' });
+      }
+      if (rawMeal !== 'beef' && rawMeal !== 'chicken') {
+        return res.status(400).json({ error: 'Invalid meal choice. Please select either Beef or Chicken.' });
+      }
+      guestMeal = rawMeal;
+    }
+
+    // 5. Optional fields with length limits
+    const guestDietary = sanitizeString(dietary, 250);
+    const guestMessage = sanitizeString(message, 500);
+
+    // 6. Supabase Persistence
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       return res.status(500).json({
-        error: 'Backend configuration error: Supabase credentials are missing on the server.'
+        error: 'Backend configuration error: Supabase credentials are not configured on the server.'
       });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Upsert on phone so duplicate submissions update the guest response instead of failing
     const payload = {
       name: guestName,
       phone: guestPhone,
@@ -111,11 +164,11 @@ export default async function handler(req, res) {
       .single();
 
     if (error) {
-      console.error('Supabase insert error:', error);
-      return res.status(500).json({ error: 'Failed to record RSVP: ' + error.message });
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: 'Database error: ' + error.message });
     }
 
-    // Trigger Telegram notification in background
+    // Trigger optional Telegram notification in background (non-blocking)
     notifyTelegram(payload).catch(console.error);
 
     return res.status(200).json({
@@ -125,6 +178,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Submission error:', err);
-    return res.status(500).json({ error: 'Internal server error: ' + err.message });
+    return res.status(500).json({ error: 'Internal server error: ' + (err.message || 'Unknown error') });
   }
 }

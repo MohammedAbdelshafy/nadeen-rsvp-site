@@ -10,39 +10,41 @@ function setCorsHeaders(res) {
   );
 }
 
-function verifyAuth(req) {
+export function verifyAuth(req) {
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) return false;
 
   const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-  const customHeader = req.headers['x-admin-password'];
-  const queryToken = req.query ? req.query.token : null;
+  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
+  const customHeader = (req.headers['x-admin-password'] || '').trim();
+  const queryToken = (req.query && req.query.token ? String(req.query.token) : '').trim();
 
   return token === adminPassword || customHeader === adminPassword || queryToken === adminPassword;
 }
 
-// Escape cell values for CSV formatting
-function escapeCSV(val) {
+// Escape cell values according to RFC 4180 CSV standard
+export function escapeCSV(val) {
   if (val === null || val === undefined) return '""';
   const str = String(val).replace(/"/g, '""');
   return `"${str}"`;
 }
 
-function generateCSV(data) {
-  const headers = ['ID', 'Full Name', 'WhatsApp / Phone', 'Attending', 'Meal Choice', 'Dietary Restrictions', 'Message to Bride', 'Submitted At'];
+export function generateCSV(data) {
+  // Required columns: Name, Phone, Attending, Meal, Dietary Restrictions, Message, Timestamp
+  const headers = ['Name', 'Phone', 'Attending', 'Meal', 'Dietary Restrictions', 'Message', 'Timestamp'];
   const rows = data.map(r => [
-    escapeCSV(r.id),
     escapeCSV(r.name),
     escapeCSV(r.phone),
     escapeCSV(r.attending ? 'Yes' : 'No'),
-    escapeCSV(r.meal || 'N/A'),
+    escapeCSV(r.attending ? (r.meal || 'N/A') : 'N/A'),
     escapeCSV(r.dietary || 'None'),
     escapeCSV(r.message || ''),
-    escapeCSV(r.created_at ? new Date(r.created_at).toLocaleString() : '')
+    escapeCSV(r.created_at ? new Date(r.created_at).toISOString() : '')
   ]);
 
-  return [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
+  // Include UTF-8 Byte Order Mark (BOM) so Excel opens Arabic and special characters cleanly
+  const bom = '\uFEFF';
+  return bom + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
 }
 
 export default async function handler(req, res) {
@@ -72,17 +74,18 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: 'Database query failed: ' + error.message });
     }
 
-    const csvContent = generateCSV(data);
+    const guestList = data || [];
+    const csvContent = generateCSV(guestList);
     const action = (req.query && req.query.action) || (req.body && req.body.action) || 'download';
 
-    const total = data.length;
-    const attendingCount = data.filter(r => r.attending).length;
-    const notAttendingCount = data.filter(r => !r.attending).length;
-    const beefCount = data.filter(r => r.attending && r.meal === 'beef').length;
-    const chickenCount = data.filter(r => r.attending && r.meal === 'chicken').length;
+    const total = guestList.length;
+    const attendingCount = guestList.filter(r => r.attending).length;
+    const notAttendingCount = guestList.filter(r => !r.attending).length;
+    const beefCount = guestList.filter(r => r.attending && r.meal === 'beef').length;
+    const chickenCount = guestList.filter(r => r.attending && r.meal === 'chicken').length;
 
     // Action 1: Send directly to Telegram
     if (action === 'telegram') {
@@ -91,24 +94,25 @@ export default async function handler(req, res) {
 
       if (!tgToken || !tgChatId) {
         return res.status(400).json({
-          error: 'Telegram credentials (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) are not configured on the server.'
+          error: 'Telegram credentials (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) are not configured on the server.',
+          status: 'UNCONFIGURED_TELEGRAM'
         });
       }
 
-      const caption = `📊 *Nadeen & Omar RSVP Export*\n` +
-        `📅 *Export Date:* ${new Date().toLocaleString()}\n\n` +
+      const summaryText = `📊 *Nadeen & Omar RSVP Export Summary*\n\n` +
+        `📅 *Export Timestamp:* ${new Date().toUTCString()}\n\n` +
         `👥 *Total Responses:* ${total}\n` +
         `✅ *Attending:* ${attendingCount}\n` +
         `❌ *Not Attending:* ${notAttendingCount}\n` +
         `🥩 *Beef Plates:* ${beefCount}\n` +
         `🍗 *Chicken Plates:* ${chickenCount}\n\n` +
-        `📎 Attached is the full guest CSV report.`;
+        `📎 Attached is the full guest CSV export.`;
 
       const formData = new FormData();
       formData.append('chat_id', tgChatId);
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      formData.append('document', blob, `nadeen_rsvp_export_${Date.now()}.csv`);
-      formData.append('caption', caption);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      formData.append('document', blob, `nadeen_rsvps_${new Date().toISOString().slice(0, 10)}.csv`);
+      formData.append('caption', summaryText);
       formData.append('parse_mode', 'Markdown');
 
       const tgResponse = await fetch(`https://api.telegram.org/bot${tgToken}/sendDocument`, {
@@ -120,23 +124,30 @@ export default async function handler(req, res) {
 
       if (!tgResult.ok) {
         return res.status(500).json({
-          error: `Telegram delivery failed: ${tgResult.description || 'Unknown error'}`
+          error: `Telegram API error: ${tgResult.description || 'Unknown failure'}`
         });
       }
 
       return res.status(200).json({
         success: true,
-        message: 'RSVP CSV export and summary report successfully sent to Telegram!',
-        telegramResult: tgResult
+        message: 'RSVP CSV export and summary report successfully delivered to Telegram!',
+        summary: {
+          total,
+          attending: attendingCount,
+          notAttending: notAttendingCount,
+          beef: beefCount,
+          chicken: chickenCount
+        }
       });
     }
 
     // Action 2: Direct browser CSV download
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="nadeen_rsvps_${new Date().toISOString().slice(0,10)}.csv"`);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="nadeen_rsvps_${new Date().toISOString().slice(0, 10)}.csv"`);
     return res.status(200).send(csvContent);
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error('Export error:', err);
+    return res.status(500).json({ error: 'Export failed: ' + (err.message || 'Unknown error') });
   }
 }

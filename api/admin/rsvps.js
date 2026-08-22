@@ -10,15 +10,16 @@ function setCorsHeaders(res) {
   );
 }
 
-function verifyAuth(req) {
+export function verifyAuth(req) {
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) return false;
 
   const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-  const customHeader = req.headers['x-admin-password'];
+  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
+  const customHeader = (req.headers['x-admin-password'] || '').trim();
+  const queryToken = (req.query && req.query.token ? String(req.query.token) : '').trim();
 
-  return token === adminPassword || customHeader === adminPassword;
+  return token === adminPassword || customHeader === adminPassword || queryToken === adminPassword;
 }
 
 export default async function handler(req, res) {
@@ -48,14 +49,15 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: 'Database query failed: ' + error.message });
     }
 
-    const total = data.length;
-    const attendingCount = data.filter(r => r.attending).length;
-    const notAttendingCount = data.filter(r => !r.attending).length;
-    const beefCount = data.filter(r => r.attending && r.meal === 'beef').length;
-    const chickenCount = data.filter(r => r.attending && r.meal === 'chicken').length;
+    const guestList = data || [];
+    const total = guestList.length;
+    const attendingCount = guestList.filter(r => r.attending).length;
+    const notAttendingCount = guestList.filter(r => !r.attending).length;
+    const beefCount = guestList.filter(r => r.attending && r.meal === 'beef').length;
+    const chickenCount = guestList.filter(r => r.attending && r.meal === 'chicken').length;
 
     return res.status(200).json({
       summary: {
@@ -65,9 +67,10 @@ export default async function handler(req, res) {
         beef: beefCount,
         chicken: chickenCount
       },
-      rsvps: data
+      rsvps: guestList
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error('Admin query error:', err);
+    return res.status(500).json({ error: 'Internal server error: ' + (err.message || 'Unknown error') });
   }
 }
