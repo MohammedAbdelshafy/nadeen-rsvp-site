@@ -196,7 +196,7 @@ export default async function handler(req, res) {
     }
 
     // 5. Optional fields with length limits
-    const guestDietary = sanitizeString(dietary, 250);
+    const guestDietary = isAttending ? sanitizeString(dietary, 250) : null;
     const guestMessage = sanitizeString(message, 500);
 
     // 6. Supabase Persistence

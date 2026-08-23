@@ -35,10 +35,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // If attending radio changed, toggle meal section visibility
                 if (input.name === 'attending') {
+                    const dietarySection = document.getElementById('dietary-section');
+                    const dietaryInput = document.getElementById('dietary');
+                    const plateInputs = document.querySelectorAll('input[name="plate"]');
+                    
                     if (input.value === 'no') {
                         if (mealSection) mealSection.style.display = 'none';
+                        if (dietarySection) dietarySection.style.display = 'none';
+                        
+                        plateInputs.forEach(p => p.disabled = true);
+                        if (dietaryInput) {
+                            dietaryInput.value = '';
+                            dietaryInput.disabled = true;
+                        }
                     } else {
                         if (mealSection) mealSection.style.display = 'flex';
+                        if (dietarySection) dietarySection.style.display = 'flex';
+                        
+                        plateInputs.forEach(p => p.disabled = false);
+                        if (dietaryInput) {
+                            dietaryInput.disabled = false;
+                        }
+                        
+                        // ensure one is checked
+                        const plateChecked = document.querySelector('input[name="plate"]:checked');
+                        if (!plateChecked && plateInputs.length > 0) {
+                            plateInputs[0].checked = true;
+                            plateInputs[0].closest('.radio-btn').classList.add('active');
+                        }
                     }
                 }
             });
@@ -85,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 whatsapp,
                 attending,
                 plate: attending === 'yes' ? plate : null,
-                dietary,
+                dietary: attending === 'yes' ? dietary : null,
                 message
             };
 
@@ -165,7 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Ensure meal section is visible again
+        // Ensure sections are visible and enabled again
         if (mealSection) mealSection.style.display = 'flex';
+        const dietarySection = document.getElementById('dietary-section');
+        if (dietarySection) dietarySection.style.display = 'flex';
+        
+        document.querySelectorAll('input[name="plate"]').forEach(p => p.disabled = false);
+        const dietaryInput = document.getElementById('dietary');
+        if (dietaryInput) dietaryInput.disabled = false;
     });
 });
