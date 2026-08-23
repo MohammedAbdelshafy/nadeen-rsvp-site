@@ -88,8 +88,8 @@ async function notifyBrideEmail(rsvp) {
 
   const guestName = rsvp.name || 'Unknown';
   const attendingText = rsvp.attending ? 'Attending' : 'Not attending';
-  const mealText = rsvp.attending ? (rsvp.meal || 'N/A') : 'N/A';
-  const dietaryText = rsvp.attending ? (rsvp.dietary || 'N/A') : 'N/A';
+  const mealText = rsvp.attending ? (rsvp.meal || 'Not applicable') : 'Not applicable';
+  const dietaryText = rsvp.attending ? (rsvp.dietary || 'Not applicable') : 'Not applicable';
   const messageText = rsvp.message || 'None';
   const timestamp = new Date().toLocaleString();
 
@@ -98,8 +98,8 @@ async function notifyBrideEmail(rsvp) {
 Guest:
 ${guestName}
 
-WhatsApp:
-${rsvp.phone || 'N/A'}
+Phone:
+${rsvp.phone || 'Not applicable'}
 
 Attendance:
 ${attendingText}
@@ -107,7 +107,7 @@ ${attendingText}
 Meal:
 ${mealText}
 
-Dietary restrictions:
+Dietary:
 ${dietaryText}
 
 Message:
@@ -120,13 +120,13 @@ RSVP website:
 https://mohammedabdelshafy.github.io/nadeen-rsvp-site/`;
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"Nadeen RSVP" <${user}>`,
       to: 'Nadeenabdelshafyy@gmail.com',
       subject: `🌸 New Nadeen RSVP — ${guestName}`,
       text: textBody
     });
-    console.log('Bride email notification sent successfully.');
+    console.log(`Bride email notification sent successfully. MessageId: ${info.messageId}`);
   } catch (err) {
     console.error('Email notification error:', err);
   }
