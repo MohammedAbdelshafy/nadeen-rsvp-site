@@ -37,7 +37,7 @@ export function sanitizeString(val, maxLength = 255) {
 // Optional helper to notify Telegram on each submission
 async function notifyTelegram(rsvp) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatIds = [process.env.TELEGRAM_CHAT_ID, "01026915435"].filter(Boolean);
+  const chatIds = [process.env.TELEGRAM_CHAT_ID, process.env.TELEGRAM_CHAT_ID_2].filter(Boolean);
   if (!token || chatIds.length === 0) return;
 
   const attendingText = rsvp.attending ? '✅ YES, Attending' : '❌ NOT Attending';
