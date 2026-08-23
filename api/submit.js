@@ -42,8 +42,8 @@ async function notifyTelegram(rsvp) {
 
   const attendingText = rsvp.attending ? '✅ YES, Attending' : '❌ NOT Attending';
   const mealText = rsvp.attending ? (rsvp.meal ? rsvp.meal.toUpperCase() : 'Not specified') : 'N/A';
-  const dietaryText = rsvp.dietary ? rsvp.dietary : 'None';
-  const messageText = rsvp.message ? rsvp.message : 'None';
+  const dietaryText = rsvp.attending ? (rsvp.dietary || 'None') : 'N/A';
+  const messageText = rsvp.message || 'None';
 
   const text = `💌 *New RSVP Submitted!*\n\n` +
     `👤 *Name:* ${rsvp.name}\n` +

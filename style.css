@@ -166,8 +166,8 @@ body {
 
 /* Couple Image */
 .couple-image-container {
-    width: 100%;
-    max-width: 550px;
+    width: 95%;
+    max-width: 760px;
     margin: 40px auto;
     position: relative;
     display: flex;
@@ -176,7 +176,7 @@ body {
 
 .couple-img {
     width: 100%;
-    max-width: 500px;
+    max-width: 100%;
     height: auto;
     display: block;
     margin: 0 auto;

@@ -43,7 +43,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (mealSection) mealSection.style.display = 'none';
                         if (dietarySection) dietarySection.style.display = 'none';
                         
-                        plateInputs.forEach(p => p.disabled = true);
+                        plateInputs.forEach(p => {
+                            p.checked = false;
+                            p.disabled = true;
+                            const lbl = p.closest('.radio-btn');
+                            if (lbl) lbl.classList.remove('active');
+                        });
+                        
                         if (dietaryInput) {
                             dietaryInput.value = '';
                             dietaryInput.disabled = true;
