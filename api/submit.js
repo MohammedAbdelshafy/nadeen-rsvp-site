@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import nodemailer from 'nodemailer';
 
 // Helper to set CORS headers
 function setCorsHeaders(res) {
@@ -67,6 +68,67 @@ async function notifyTelegram(rsvp) {
     });
   } catch (err) {
     console.error('Telegram notification error:', err);
+  }
+}
+
+// Optional helper to notify the bride via email
+async function notifyBrideEmail(rsvp) {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  
+  if (!user || !pass) {
+    console.warn('Email notification skipped: SMTP_USER or SMTP_PASS missing');
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass }
+  });
+
+  const guestName = rsvp.name || 'Unknown';
+  const attendingText = rsvp.attending ? 'Attending' : 'Not attending';
+  const mealText = rsvp.attending ? (rsvp.meal || 'N/A') : 'N/A';
+  const dietaryText = rsvp.attending ? (rsvp.dietary || 'N/A') : 'N/A';
+  const messageText = rsvp.message || 'None';
+  const timestamp = new Date().toLocaleString();
+
+  const textBody = `Nadeen has received a new RSVP.
+
+Guest:
+${guestName}
+
+WhatsApp:
+${rsvp.phone || 'N/A'}
+
+Attendance:
+${attendingText}
+
+Meal:
+${mealText}
+
+Dietary restrictions:
+${dietaryText}
+
+Message:
+${messageText}
+
+Submitted:
+${timestamp}
+
+RSVP website:
+https://mohammedabdelshafy.github.io/nadeen-rsvp-site/`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Nadeen RSVP" <${user}>`,
+      to: 'Nadeenabdelshafyy@gmail.com',
+      subject: `🌸 New Nadeen RSVP — ${guestName}`,
+      text: textBody
+    });
+    console.log('Bride email notification sent successfully.');
+  } catch (err) {
+    console.error('Email notification error:', err);
   }
 }
 
@@ -171,6 +233,7 @@ export default async function handler(req, res) {
 
     // Await Telegram notification so serverless function doesn't terminate before it finishes
     await notifyTelegram(payload);
+    await notifyBrideEmail(payload);
 
     return res.status(200).json({
       success: true,
