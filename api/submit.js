@@ -37,8 +37,8 @@ export function sanitizeString(val, maxLength = 255) {
 // Optional helper to notify Telegram on each submission
 async function notifyTelegram(rsvp) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) return;
+  const chatIds = [process.env.TELEGRAM_CHAT_ID, "01026915435"].filter(Boolean);
+  if (!token || chatIds.length === 0) return;
 
   const attendingText = rsvp.attending ? '✅ YES, Attending' : '❌ NOT Attending';
   const mealText = rsvp.attending ? (rsvp.meal ? rsvp.meal.toUpperCase() : 'Not specified') : 'N/A';
@@ -55,19 +55,21 @@ async function notifyTelegram(rsvp) {
     `⏰ *Time:* ${new Date().toLocaleString()}\n\n` +
     `🔗 *Guest Link:* [nadeen-rsvp-site.vercel.app](https://nadeen-rsvp-site.vercel.app/)`;
 
-  try {
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        parse_mode: 'Markdown'
-      })
-    });
-  } catch (err) {
-    console.error('Telegram notification error:', err);
+  for (const cid of chatIds) {
+    try {
+      const url = `https://api.telegram.org/bot${token}/sendMessage`;
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: cid,
+          text: text,
+          parse_mode: 'Markdown'
+        })
+      });
+    } catch (err) {
+      console.error(`Telegram notification error for ${cid}:`, err);
+    }
   }
 }
 
