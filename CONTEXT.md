@@ -2,29 +2,30 @@
 type: repository
 status: active
 owner_repo: MohammedAbdelshafy/nadeen-rsvp-site
-product_name: Nadeen RSVP Site
+product_name: Nadeen RSVP Website
 source_of_truth: https://github.com/MohammedAbdelshafy/nadeen-rsvp-site
 ---
 
-# Nadeen RSVP Site CONTEXT
+# Nadeen RSVP Website CONTEXT
 
-One job: let invited guests respond to an event invitation and capture the details needed by the host.
+One job: let invited guests submit their response and allow authorized organizers to manage responses.
 
 ## Inputs
-- Guest page: [index.html](index.html)
-- Form behavior: [script.js](script.js)
-- Admin page: [admin.html](admin.html)
-- Data integration: [api](api/) and [supabase_schema.sql](supabase_schema.sql)
+- Public page: [index.html](index.html)
+- Client logic: [script.js](script.js)
+- Admin interface: [admin.html](admin.html), [admin.js](admin.js)
+- API routes: [api](api/)
+- Schema: [supabase_schema.sql](supabase_schema.sql)
 
 ## Process
-1. Confirm the current date, place, RSVP deadline and guest-facing wording.
-2. Collect only the information needed for the event.
-3. Validate attendance, selected meal and optional notes.
-4. Protect the admin functions and RSVP data from public access.
-5. Follow the event's data retention and deletion needs.
+1. Review the guest-facing page and RSVP form.
+2. Validate input at the client and server boundaries.
+3. Check database access rules and admin authorization.
+4. Test create/update behavior with fictional guests.
+5. Confirm no guest records or credentials appear in source control.
 
 ## Output
-An RSVP record and the information the host needs to plan the event.
+A working RSVP page and an access-controlled admin workflow, if the deployment and policies are configured correctly.
 
 ## Check
-Test submission, validation, duplicate handling, admin authorization and data storage before publishing. Do not reuse stale event details or place guest records in Git.
+Test form validation, duplicate submissions, unauthorized admin/API access and database policy behavior. Do not treat a hidden admin button as access control.
