@@ -1,17 +1,20 @@
-# Nadeen RSVP Site
+# Nadeen RSVP Website
 
-A small event-invitation website with an RSVP form, attendance choice, meal selection and an optional message.
+A small event website with a guest-facing RSVP page, supporting assets and an admin view.
 
-## Main files
+## Where things live
 
-- [index.html](index.html) — guest-facing invitation and RSVP form
-- [script.js](script.js) — client-side form behavior
-- [admin.html](admin.html) and [admin.js](admin.js) — event administration UI
-- [api/](api/) and [supabase_schema.sql](supabase_schema.sql) — backing data integration
-- [vercel.json](vercel.json) — deployment configuration
+- `index.html`, `script.js`, `style.css`: public event page.
+- `admin.html`, `admin.js`: admin interface.
+- `api/`: server-side routes.
+- `supabase_schema.sql`: database schema.
+- `vercel.json`: deployment configuration.
 
-## Before reusing or publishing
+## Before changing or deploying
 
-The current page contains a specific event date, venue, names and RSVP deadline. Confirm those details, access permissions, form behavior and data retention before reusing it for another event. Guest names, phone numbers and meal choices are personal information; do not copy real RSVP records into source control.
+- Check the current data flow and database policies before changing guest records.
+- Keep admin routes behind authentication and verify authorization on the server, not only in the browser.
+- Do not commit service-role keys, private guest details or admin credentials.
+- Test an RSVP and admin workflow with fictional data before using it for a real event.
 
-This project is a standalone event site, separate from the MBM product portfolio.
+This repository is a standalone event website, not part of the MBM product code. The technical slug remains `nadeen-rsvp-site`.
