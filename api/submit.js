@@ -202,12 +202,17 @@ export default async function handler(req, res) {
     const guestMessage = sanitizeString(message, 500);
 
     // 6. Supabase Persistence
+    // ENV REQUIREMENT: SUPABASE_SERVICE_ROLE_KEY must be set on the server.
+    // RLS on public.rsvps grants the anon key no access at all — every write
+    // must go through this validating endpoint using the service-role key.
+    // The service-role key is server-only: never expose it to the browser
+    // (no VITE_ prefix) and never fall back to the anon key here.
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       return res.status(500).json({
-        error: 'Backend configuration error: Supabase credentials are not configured on the server.'
+        error: 'Backend configuration error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured on the server.'
       });
     }
 

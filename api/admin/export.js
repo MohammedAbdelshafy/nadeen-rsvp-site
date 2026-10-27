@@ -14,12 +14,17 @@ export function verifyAuth(req) {
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) return false;
 
+  // The admin token is accepted ONLY from the Authorization header, the
+  // x-admin-password header, or a POST body field — never from the URL
+  // query string, where it would leak into browser history, server access
+  // logs, and Referer headers.
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
   const customHeader = (req.headers['x-admin-password'] || '').trim();
-  const queryToken = (req.query && req.query.token ? String(req.query.token) : '').trim();
+  const body = (req.body && typeof req.body === 'object') ? req.body : {};
+  const bodyToken = String(body.password || body.token || '').trim();
 
-  return token === adminPassword || customHeader === adminPassword || queryToken === adminPassword;
+  return token === adminPassword || customHeader === adminPassword || bodyToken === adminPassword;
 }
 
 // Escape cell values according to RFC 4180 CSV standard
@@ -59,11 +64,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    // ENV REQUIREMENT: SUPABASE_SERVICE_ROLE_KEY must be set on the server.
+    // RLS on public.rsvps grants the anon key no access, so there is no
+    // anon-key fallback — the service-role key is server-only and must
+    // never be exposed to the browser (no VITE_ prefix).
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      return res.status(500).json({ error: 'Supabase credentials missing on server.' });
+      return res.status(500).json({ error: 'Supabase credentials missing on server (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required).' });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);

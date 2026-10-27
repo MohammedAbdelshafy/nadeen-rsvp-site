@@ -181,10 +181,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Download CSV
-    downloadCsvBtn.addEventListener('click', () => {
+    // The token is sent in the Authorization header and the CSV is saved
+    // from the fetched Blob — the token must never be placed in a URL,
+    // where it would leak into browser history and server logs.
+    downloadCsvBtn.addEventListener('click', async () => {
         const token = getAuthToken();
         if (!token) return;
-        window.open(getApiUrl(`/api/admin/export?action=download&token=${encodeURIComponent(token)}`), '_blank');
+
+        downloadCsvBtn.disabled = true;
+        try {
+            const res = await fetch(getApiUrl('/api/admin/export?action=download'), {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'x-admin-password': token
+                }
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to download CSV');
+            }
+
+            const blob = await res.blob();
+            const disposition = res.headers.get('Content-Disposition') || '';
+            const match = disposition.match(/filename="?([^"]+)"?/);
+            const filename = match ? match[1] : 'nadeen_rsvps.csv';
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            alert('⚠️ Download error: ' + err.message);
+        } finally {
+            downloadCsvBtn.disabled = false;
+        }
     });
 
     // Send to Telegram

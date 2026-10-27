@@ -28,17 +28,16 @@ CREATE INDEX IF NOT EXISTS idx_rsvps_attending ON public.rsvps(attending);
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.rsvps ENABLE ROW LEVEL SECURITY;
 
--- Allow public insert access so direct client or backend can record RSVPs
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies WHERE tablename = 'rsvps' AND policyname = 'Enable insert for all users'
-    ) THEN
-        CREATE POLICY "Enable insert for all users" ON public.rsvps
-            FOR INSERT WITH CHECK (true);
-    END IF;
-END
-$$;
+-- NO public/anon access to this table.
+-- RSVP submissions must flow through the validating serverless API
+-- (api/submit.js), which writes with the service-role key (see the policy
+-- below). Anonymous clients must NOT be able to INSERT directly through
+-- PostgREST — a permissive insert policy would bypass all of the API's
+-- validation/sanitization. With RLS enabled and no anon policies, direct
+-- anon access is denied by default.
+-- Drop the old permissive policy if a previous version of this script
+-- created it, so re-running this script closes the hole on live databases.
+DROP POLICY IF EXISTS "Enable insert for all users" ON public.rsvps;
 
 -- Allow service role full access
 DO $$
